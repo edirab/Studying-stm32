@@ -19,4 +19,4 @@
 - **Приложение Б** с.52 Программа для ознакомления с модулями МПС ADC и таймером в режиме формирования ШИМ
 
 
-![](./documentation/bluepillpinout.gif)
+![](./literature/bluepillpinout.gif)
