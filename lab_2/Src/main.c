@@ -52,6 +52,7 @@ UART_HandleTypeDef huart3;
 /* USER CODE BEGIN PV */
 volatile uint32_t PWM_val = 60;
 volatile uint32_t adc_debug = 0;
+
 volatile uint8_t current_conversion = 0;
 volatile uint32_t adc_values[4] = {0};
 /* USER CODE END PV */
@@ -117,8 +118,15 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (1) {
+
+	 // наименьшее и 4-х
+	 uint32_t a = (adc_values[0] < adc_values[1]) ? adc_values[0] : adc_values[1];
+	 uint32_t b = (adc_values[2] < adc_values[3]) ? adc_values[2] : adc_values[3];
+	 uint32_t c = (a < b) ? a : b;
+
+	 PWM_val = ( 123 * c / 4095);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -32,7 +32,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
- 
+#define MAX_CONVERSIONS 4
+#define MAX_PWM 123
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -62,6 +63,10 @@ extern TIM_HandleTypeDef htim2;
 extern UART_HandleTypeDef huart3;
 extern uint32_t PWM_val;
 extern uint32_t adc_debug;
+
+extern uint32_t  adc_values[4];
+extern uint8_t current_conversion;
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -206,21 +211,24 @@ void SysTick_Handler(void)
 void ADC1_2_IRQHandler(void)
 {
   /* USER CODE BEGIN ADC1_2_IRQn 0 */
-	HAL_GPIO_TogglePin(end_adc_GPIO_Port, end_adc_Pin);
+	HAL_GPIO_TogglePin(end_adc_GPIO_Port, end_adc_Pin);	// debug purpose only
 
-	//if(__HAL_ADC_GET_FLAG(&hadc1, ADC_IT_EOC) != RESET){
-	uint32_t pure_analog_val = HAL_ADC_GetValue(&hadc1);
+	if (current_conversion >= 4){
+		current_conversion = 0; }
 
-	PWM_val = ( 123 * pure_analog_val / 4095);
+	adc_values[current_conversion++] = HAL_ADC_GetValue(&hadc1);
+
+	//uint32_t pure_analog_val = HAL_ADC_GetValue(&hadc1);
+	//PWM_val = ( 123 * pure_analog_val / 4095);
 
 	adc_debug++;
 
-	if (adc_debug == 10000){
+	if (adc_debug == 20000){
 		char trans_str[64] = {0,};
 
-		snprintf(trans_str, 64, "%lu %lu \n",pure_analog_val, PWM_val);
+		//snprintf(trans_str, 64, "%lu %lu \n",pure_analog_val, PWM_val);
+		snprintf(trans_str, 64, "%lu %lu \n",adc_values[0], PWM_val);
 		HAL_UART_Transmit(&huart3, (uint8_t*)trans_str, strlen(trans_str), 1000);
-		//HAL_Delay(500);
 		adc_debug = 0;
 	}
 
@@ -252,7 +260,7 @@ void TIM2_IRQHandler(void)
 	if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_CC1) != RESET) {
 		__HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_CC1);
 
-		if (PWM_val < 123) {
+		if (PWM_val < MAX_PWM) {
 			HAL_GPIO_WritePin(pwm_GPIO_Port, pwm_Pin, RESET); }
 	}
 
