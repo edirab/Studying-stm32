@@ -3,6 +3,17 @@
 
 Debug/
 Release/
+Backup/
 
+Drivers/
+
+~*
+~$*
+
+*.jar
+*.log
+*.zip
 *.ld
 *.launch
+*.elf*
+*.ld
