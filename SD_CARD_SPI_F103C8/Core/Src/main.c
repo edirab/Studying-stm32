@@ -66,7 +66,7 @@ static void MX_USART1_UART_Init(void);
 
 FATFS fs;  // file system
 FIL fil; // File
-FILINFO fno;
+//FILINFO fno;
 FRESULT fresult;  // result
 UINT br, bw;  // File read/write count
 
@@ -142,6 +142,7 @@ int main(void)
 	/*************** Card capacity details ********************/
 
 	/* Check free space */
+/*
 	f_getfree("", &fre_clust, &pfs);
 
 	total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
@@ -152,7 +153,7 @@ int main(void)
 	sprintf (buffer, "SD CARD Free Space: \t%lu\n\n",free_space);
 	send_uart(buffer);
 	clear_buffer();
-
+*/
 
 
 	/************* The following operation is using PUTS and GETS *********************/
@@ -172,11 +173,13 @@ int main(void)
 	fresult = f_open(&fil, "file1.txt", FA_READ);
 
 	/* Read string from the file */
+/*
 	f_gets(buffer, f_size(&fil), &fil);
 
 	send_uart("File1.txt is opened and it contains the data as shown below\n");
 	send_uart(buffer);
 	send_uart("\n\n");
+ */
 
 	/* Close file */
 	f_close(&fil);
@@ -212,10 +215,11 @@ int main(void)
 
 	/* Read data from the file
 	 * Please see the function details for the arguments */
+/*
 	f_read (&fil, buffer, f_size(&fil), &br);
 	send_uart(buffer);
 	send_uart("\n\n");
-
+*/
 	/* Close file */
 	f_close(&fil);
 
@@ -243,11 +247,12 @@ int main(void)
 	fresult = f_open (&fil, "file2.txt", FA_READ);
 
 	/* Read string from the file */
+/*
 	fresult = f_read (&fil, buffer, f_size(&fil), &br);
 	if (fresult == FR_OK)send_uart ("Below is the data from updated file2.txt\n");
 	send_uart(buffer);
 	send_uart("\n\n");
-
+*/
 	/* Close file */
 	f_close(&fil);
 
@@ -256,15 +261,15 @@ int main(void)
 
 	/*************************REMOVING FILES FROM THE DIRECTORY ****************************/
 
-	fresult = f_unlink("/file1.txt");
-	if (fresult == FR_OK) send_uart("file1.txt removed successfully...\n");
+	//fresult = f_unlink("/file1.txt");
+	//if (fresult == FR_OK) send_uart("file1.txt removed successfully...\n");
 
 	//fresult = f_unlink("/file2.txt");
 	//if (fresult == FR_OK) send_uart("file2.txt removed successfully...\n");
 
 	/* Unmount SDCARD */
-	//fresult = f_mount(NULL, "/", 1);
-	//if (fresult == FR_OK) send_uart ("SD CARD UNMOUNTED successfully...\n");
+	fresult = f_mount(NULL, "/", 1);
+	if (fresult == FR_OK) send_uart ("SD CARD UNMOUNTED successfully...\n");
 
 
   /* USER CODE END 2 */
