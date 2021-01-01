@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=D:/STM-projects/I2C_DS3231/Inc
+HeaderPath=C:/Users/corsair/Documents/Studying-stm32/I2C_DS3231/Inc
 HeaderFiles=stm32f1xx_it.h;stm32f1xx_hal_conf.h;main.h;
-SourcePath=D:/STM-projects/I2C_DS3231/Src
+SourcePath=C:/Users/corsair/Documents/Studying-stm32/I2C_DS3231/Src
 SourceFiles=stm32f1xx_it.c;stm32f1xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

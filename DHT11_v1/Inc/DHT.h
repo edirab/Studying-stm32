@@ -16,7 +16,7 @@ typedef enum {
 
 /* Настройки */
 #define DHT_Port 	GPIOB				//Группа линии данных
-#define DHT_Pin 	GPIO_PIN_6 	//Пин линии данных
+#define DHT_Pin 	GPIO_PIN_8 	//Пин линии данных
 #define DHT_PullUp 0					//Нужно ли включать внутреннюю подтяжку пина к питанию
 #define DHT_timeout 10000			//Количество итераций, после которых функция вернёт пустые значения
 

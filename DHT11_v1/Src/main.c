@@ -14,18 +14,18 @@
   * License. You may obtain a copy of the License at:
   *                        opensource.org/licenses/BSD-3-Clause
   *
-  *		Библиотека DHT:
+  *		Р‘РёР±Р»РёРѕС‚РµРєР° DHT:
   *
   * 	https://github.com/RainbowKiwiFOX/DHT
   *
-  * 	Про проблемы с выводом чисел с плавающей точкой:
+  * 	РџСЂРѕ РїСЂРѕР±Р»РµРјС‹ СЃ РІС‹РІРѕРґРѕРј С‡РёСЃРµР» СЃ РїР»Р°РІР°СЋС‰РµР№ С‚РѕС‡РєРѕР№:
   *
   * 	https://stackoverflow.com/questions/28334435/stm32-printf-float-variable
   *
-  * 	Возможные варианты решения:
+  * 	Р’РѕР·РјРѕР¶РЅС‹Рµ РІР°СЂРёР°РЅС‚С‹ СЂРµС€РµРЅРёСЏ:
   *
-  * 	- добавить флаг в опции линкера: -u _printf_float
-  * 	- преобразовать в целое число:
+  * 	- РґРѕР±Р°РІРёС‚СЊ С„Р»Р°Рі РІ РѕРїС†РёРё Р»РёРЅРєРµСЂР°: -u _printf_float
+  * 	- РїСЂРµРѕР±СЂР°Р·РѕРІР°С‚СЊ РІ С†РµР»РѕРµ С‡РёСЃР»Рѕ:
   * 		snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
   *
   *
