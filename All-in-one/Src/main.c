@@ -51,6 +51,8 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
+char str[100];
+uint8_t aTxBuffer[8];
 
 /* USER CODE END PV */
 
