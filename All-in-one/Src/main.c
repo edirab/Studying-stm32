@@ -23,7 +23,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "fatfs_sd.h"
+#include "string.h"
+#include "stdio.h"
 
+#include "DHT.h"
+#include "myRTC.h"
+#include "i2c-lcd.h"
+#include "myFunctions.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,9 +57,20 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
-char str[100];
-uint8_t aTxBuffer[8];
+	DHT_type dht_type;
+	DHT_data dht_data;
 
+	FATFS fs;  // file system
+	FIL fil; // File
+	FRESULT fresult;  // result
+
+	char lcd_upper[16+1];
+	char lcd_lower[16+1];
+	char buffer[BUFFER_SIZE];  // to store strings..
+	char str[100];
+	uint8_t RTC_RX_buffer[8];
+
+	uint8_t sec=0, min=0, hour=0, day=0, date=0, month=0, year=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -106,12 +124,75 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+	fresult = f_mount(&fs, "/", 1);
+	if (fresult != FR_OK) {
+		send_uart ("ERROR!!! in mounting SD CARD...\n\n");
+	}
+	else {
+		send_uart("SD CARD mounted successfully...\n\n");
+		/* Open file to write/ create a file if it doesn't exist */
+	    fresult = f_open(&fil, "data.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+		/* Move to offset to the end of the file */
+		fresult = f_lseek(&fil, f_size(&fil));
+
+		if (fresult == FR_OK)send_uart ("About to update the file2.txt\n");
+
+		/* write the string to the file */
+		fresult = f_puts("This is updated data and it should be in the end", &fil);
+	}
+
+	lcd_init ();
+	lcd_send_string ("HELLO WORLD");
+	HAL_Delay(1000);
+	lcd_put_cur(1, 0);
+	lcd_send_string("from CTECH");
+	HAL_Delay(2000);
+	lcd_clear ();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  dht_data = DHT_getData(DHT11);
+	  snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
+	  HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 1000);
+
+
+	     RTC_RX_buffer[0]=0;
+	     I2C_WriteBuffer(hi2c1,(uint16_t)DEVICE_ADDR_RTC, 1);
+
+		while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
+
+		I2C_ReadBuffer(hi2c1,(uint16_t)0xD0,7);
+
+		date=RTC_RX_buffer[4];
+		date = RTC_ConvertFromDec(date); //Преобразуем в десятичный формат
+		month=RTC_RX_buffer[5];
+		month = RTC_ConvertFromDec(month); //Преобразуем в десятичный формат
+		year=RTC_RX_buffer[6];
+		year = RTC_ConvertFromDec(year); //Преобразуем в десятичный формат
+		day=RTC_RX_buffer[3];
+		day = RTC_ConvertFromDec(day); //Преобразуем в десятичный формат
+		hour=RTC_RX_buffer[2];
+		hour = RTC_ConvertFromDec(hour); //Преобразуем в десятичный формат
+		min=RTC_RX_buffer[1];
+		min = RTC_ConvertFromDec(min); //Преобразуем в десятичный формат
+		sec=RTC_RX_buffer[0];
+		sec = RTC_ConvertFromDec(sec); //Преобразуем в десятичный формат
+
+		clear_buffer();
+		snprintf(buffer, 100, "%u : %u : %u, T = %f, H = %f\n", hour, min, sec, dht_data.temp, dht_data.hum);
+
+		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
+
+
+
+	snprintf(lcd_upper, 17, "%02u:%02u:%02u", hour, min, sec);
+	lcd_clear ();
+	lcd_put_cur(0, 0);
+	lcd_send_string(lcd_upper);
+	HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -132,10 +213,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -144,7 +228,7 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
@@ -159,6 +243,9 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  /** Enables the Clock Security System
+  */
+  HAL_RCC_EnableCSS();
 }
 
 /**
@@ -263,7 +350,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_HARD_OUTPUT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;

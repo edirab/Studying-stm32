@@ -10,8 +10,7 @@
 #define DEVICE_ADDR_RTC 0xD0
 
 extern UART_HandleTypeDef huart3;
-
-extern uint8_t aTxBuffer[];
+extern uint8_t RTC_RX_buffer[];
 extern char str[];
 
 //перевод двоично-десятичного числа в десятичное
