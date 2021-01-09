@@ -134,12 +134,12 @@ static uint8_t SD_CheckPower(void)
   return PowerFlag;
 }
 
-/* 데이터 패킷 수신 */
+/* 데이터 패킷 수신  Получать пакеты данных*/
 static bool SD_RxDataBlock(BYTE *buff, UINT btr) 
 {
   uint8_t token;
   
-  /* 100ms 타이머 */
+  /* 100ms 타이머 таймер*/
   Timer1 = 10;
 
   /* 응답 대기 */		
@@ -152,7 +152,7 @@ static bool SD_RxDataBlock(BYTE *buff, UINT btr)
   if(token != 0xFE)
     return FALSE;
   
-  /* 버퍼에 데이터 수신 */
+  /* 버퍼에 데이터 수신 Получать данные в буфере*/
   do 
   {     
     SPI_RxBytePtr(buff++);
@@ -244,11 +244,13 @@ static BYTE SD_SendCmd(BYTE cmd, DWORD arg)
   /* CRC 전송 */
   SPI_TxByte(crc);
   
-  /* CMD12 Stop Reading 명령인 경우에는 응답 바이트 하나를 버린다 */
+  /* CMD12 Stop Reading 명령인 경우에는 응답 바이트 하나를 버린다 
+  В случае команды CMD12 Stop Reading один байт ответа отбрасывается. */
   if (cmd == CMD12)
     SPI_RxByte();
   
-  /* 10회 내에 정상 데이터를 수신한다. */
+  /* 10회 내에 정상 데이터를 수신한다. 
+  Получить нормальные данные в течение 10 раз. */
   uint8_t n = 10; 
   do
   {
@@ -261,6 +263,9 @@ static BYTE SD_SendCmd(BYTE cmd, DWORD arg)
 /*-----------------------------------------------------------------------
   fatfs에서 사용되는 Global 함수들
   user_diskio.c 파일에서 사용된다.
+  
+  Глобальные функции, используемые в fatfs
+  Используется в файле user_diskio.c.
 -----------------------------------------------------------------------*/
 
 /* SD카드 초기화 */
@@ -268,11 +273,12 @@ DSTATUS SD_disk_initialize(BYTE drv)
 {
   uint8_t n, type, ocr[4];
   
-  /* 한종류의 드라이브만 지원 */
+  /* 한종류의 드라이브만 지원 
+  Поддерживает только один тип привода */
   if(drv)
     return STA_NOINIT;  
   
-  /* SD카드 미삽입 */
+  /* SD카드 미삽입  Карта не вставлена*/
   if(Stat & STA_NODISK)
     return Stat;        
   
@@ -282,16 +288,16 @@ DSTATUS SD_disk_initialize(BYTE drv)
   /* SPI 통신을 위해 Chip Select */
   SELECT();             
   
-  /* SD카드 타입변수 초기화 */
+  /* SD카드 타입변수 초기화 Инициализация переменных типа карты*/
   type = 0;
   
   /* Idle 상태 진입 */
   if (SD_SendCmd(CMD0, 0) == 1) 
   { 
-    /* 타이머 1초 설정 */
+    /* 타이머 1초 설정  Установка таймера на 1 секунду*/
     Timer1 = 100;
     
-    /* SD 인터페이스 동작 조건 확인 */
+    /* SD 인터페이스 동작 조건 확인 Проверить условия работы интерфейса*/
     if (SD_SendCmd(CMD8, 0x1AA) == 1) 
     { 
       /* SDC Ver2+ */
@@ -302,7 +308,7 @@ DSTATUS SD_disk_initialize(BYTE drv)
       
       if (ocr[2] == 0x01 && ocr[3] == 0xAA) 
       { 
-        /* 2.7-3.6V 전압범위 동작 */
+        /* 2.7-3.6V 전압범위 동작  Диапазон напряжения*/
         do {
           if (SD_SendCmd(CMD55, 0) <= 1 && SD_SendCmd(CMD41, 1UL << 30) == 0)
             break; /* ACMD41 with HCS bit */
@@ -350,7 +356,7 @@ DSTATUS SD_disk_initialize(BYTE drv)
   
   DESELECT();
   
-  SPI_RxByte(); /* Idle 상태 전환 (Release DO) */
+  SPI_RxByte(); /* Idle 상태 전환 Состояние перехода (Release DO) */
   
   if (type) 
   {
@@ -366,7 +372,7 @@ DSTATUS SD_disk_initialize(BYTE drv)
   return Stat;
 }
 
-/* 디스크 상태 확인 */
+/* 디스크 상태 확인 Проверить статус диска */
 DSTATUS SD_disk_status(BYTE drv) 
 {
   if (drv)
@@ -375,7 +381,7 @@ DSTATUS SD_disk_status(BYTE drv)
   return Stat;
 }
 
-/* 섹터 읽기 */
+/* 섹터 읽기  Сектор читать*/
 DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count) 
 {
   if (pdrv || !count)
@@ -385,19 +391,19 @@ DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
     return RES_NOTRDY;
   
   if (!(CardType & 4))
-    sector *= 512;      /* 지정 sector를 Byte addressing 단위로 변경 */
+    sector *= 512;      /* 지정 sector를 Byte addressing 단위로 변경 Изменение по единице */
   
   SELECT();
   
   if (count == 1) 
   { 
-    /* 싱글 블록 읽기 */
+    /* 싱글 블록 읽기 Чтение одного блока */
     if ((SD_SendCmd(CMD17, sector) == 0) && SD_RxDataBlock(buff, 512))
       count = 0;
   } 
   else 
   { 
-    /* 다중 블록 읽기 */
+    /* 다중 블록 읽기  Прочитать несколько блоков*/
     if (SD_SendCmd(CMD18, sector) == 0) 
     {       
       do {
@@ -407,7 +413,7 @@ DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
         buff += 512;
       } while (--count);
       
-      /* STOP_TRANSMISSION, 모든 블럭을 다 읽은 후, 전송 중지 요청 */
+      /* STOP_TRANSMISSION, 모든 블럭을 다 읽은 후, 전송 중지 요청  Запрос на остановку передачи после прочтения всех блоков*/
       SD_SendCmd(CMD12, 0); 
     }
   }
@@ -418,7 +424,7 @@ DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
   return count ? RES_ERROR : RES_OK;
 }
 
-/* 섹터 쓰기 */
+/* 섹터 쓰기 Сектор писать*/
 #if _READONLY == 0
 DRESULT SD_disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count) 
 {
@@ -438,13 +444,13 @@ DRESULT SD_disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
   
   if (count == 1) 
   { 
-    /* 싱글 블록 쓰기 */
+    /* 싱글 블록 쓰기 Запись одного блока */
     if ((SD_SendCmd(CMD24, sector) == 0) && SD_TxDataBlock(buff, 0xFE))
       count = 0;
   } 
   else 
   { 
-    /* 다중 블록 쓰기 */
+    /* 다중 블록 쓰기 Написать несколько блоков */
     if (CardType & 2) 
     {
       SD_SendCmd(CMD55, 0);
