@@ -45,7 +45,7 @@ DHT_data DHT_getData(DHT_type t) {
 	goToOutput();
 	//Опускание линии данных на 15 мс
 	lineDown();
-	Delay(15);
+	Delay(20);
 	//Подъём линии, перевод порта "на вход"
 	lineUp();
 	goToInput();
