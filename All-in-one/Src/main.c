@@ -77,6 +77,7 @@ UART_HandleTypeDef huart3;
 	float pressure, temperature, humidity;
 	uint16_t size;
 	uint8_t Data[256];
+	uint8_t cycle_counter = 1;
 
 
 /* USER CODE END PV */
@@ -169,50 +170,16 @@ int main(void)
 	}
 
 	lcd_init ();
-	lcd_send_string ("HELLO WORLD");
-	HAL_Delay(1000);
-	lcd_put_cur(1, 0);
-	lcd_send_string("from CTECH");
-	HAL_Delay(2000);
-	lcd_clear ();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  //************************ RTC ***********************************************
 
-	  //*****************************************************************************
-		HAL_Delay(100);
-		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
-			size = sprintf((char *)Data,
-					"Temperature/pressure reading failed\n");
-			HAL_UART_Transmit(&huart3, Data, size, 1000);
-			HAL_Delay(2000);
-		}
-
-		size = sprintf((char *)Data,"Pressure: %.2f Pa, Temperature: %.2f C",
-				pressure, temperature);
-		HAL_UART_Transmit(&huart3, Data, size, 1000);
-		if (bme280p) {
-			size = sprintf((char *)Data,", Humidity: %.2f\n", humidity);
-			HAL_UART_Transmit(&huart3, Data, size, 1000);
-		}
-
-		else {
-			size = sprintf((char *)Data, "\n");
-			HAL_UART_Transmit(&huart3, Data, size, 1000);
-		}
-		//*****************************************************************************
-
-
-	  dht_data = DHT_getData(DHT11);
-	  snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
-	  HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 1000);
-
-
-	     RTC_RX_buffer[0]=0;
-	     RTC_WriteBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 1);
+	  RTC_RX_buffer[0] = 0;
+	  RTC_WriteBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 1);
 
 		while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
 
@@ -233,18 +200,68 @@ int main(void)
 		sec=RTC_RX_buffer[0];
 		sec = RTC_ConvertFromDec(sec); //Преобразуем в десятичный формат
 
-		clear_buffer();
-		snprintf(buffer, 100, "%u : %u : %u, T = %f, H = %f\n", hour, min, sec, dht_data.temp, dht_data.hum);
 
+	  //*************************** BMP **************************************************
+		HAL_Delay(100);
+		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
+			size = sprintf((char *)Data,
+					"Temperature/pressure reading failed\n");
+			HAL_UART_Transmit(&huart3, Data, size, 1000);
+			HAL_Delay(2000);
+		}
+
+		// **************** DHT *******************************************************
+		if (cycle_counter == 3 || cycle_counter == 6){
+			dht_data = DHT_getData(DHT11);
+			snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
+			//HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 1000);
+		}
+
+		// ****************** передача по UART **************************************
+		clear_buffer();
+		snprintf(buffer, 100, "%02u:%02u:%02u, T = %.2f, H = %d, P = %.2f Pa\n", hour, min, sec, temperature, (uint8_t)dht_data.hum, pressure);
 		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
+		//size = sprintf((char *)Data,"P: %.2f Pa, T: %.2f C", , );
+		//HAL_UART_Transmit(&huart3, Data, size, 1000);
+		//size = sprintf((char *)Data, "\n");
+		//HAL_UART_Transmit(&huart3, Data, size, 1000);
 
+		//*****************************************************************************
+
+
+		// NB! S-N-PRINTF !!! not a S-PRINTF
 	snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", hour, min, date, month, year);
-	lcd_clear ();
+	//snprintf(lcd_lower, 17, "%0.1f*C %d %d", temperature, (uint8_t)dht_data.hum, pressure);
+
+	if (cycle_counter <= 3){
+		snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
+	//lcd_lower[0] = 'A';
+	} else {
+		snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
+	}
+
+	//lcd_clear ();
 	lcd_put_cur(0, 0);
 	lcd_send_string(lcd_upper);
+	lcd_put_cur(1, 0);
+	lcd_send_string(lcd_lower);
+
+	snprintf(buffer, 100, "%02u\n", cycle_counter);
+	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
+
+	if (cycle_counter == 6) {
+		cycle_counter = 1;
+	}
+	else {
+		cycle_counter++;
+	}
+
 	HAL_Delay(1000);
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
