@@ -247,6 +247,7 @@ int main(void)
 		fresult = f_puts(SD_data[3], &fil);
 		fresult = f_puts(SD_data[4], &fil);
 		fresult = f_puts(SD_data[5], &fil);
+		f_sync(&fil);
 		cycle_counter = 1;
 	}
 	else {
