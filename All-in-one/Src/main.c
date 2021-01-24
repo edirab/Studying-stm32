@@ -65,18 +65,18 @@ UART_HandleTypeDef huart3;
 	FIL fil; // File
 	FRESULT fresult;  // result
 
+	char days[7][4] = { "MON\0", "TUE\0", "WED\0", "THU\0", "FRI\0", "SAT\0", "SUN\0" };
+	char SD_data[6][58];
+
 	char lcd_upper[16+1];
 	char lcd_lower[16+1];
 	char buffer[BUFFER_SIZE];  // to store strings..
-	char str[100];
 
-	uint8_t RTC_RX_buffer[8];
-	uint8_t sec=0, min=0, hour=0, day=0, date=0, month=0, year=0;
+	RTC_DS3231 myRTC= {0};
 
 	BMP280_HandleTypedef bmp280;
 	float pressure, temperature, humidity;
 	uint16_t size;
-	uint8_t Data[256];
 	uint8_t cycle_counter = 1;
 
 
@@ -143,15 +143,16 @@ int main(void)
 
 
 	while (!bmp280_init(&bmp280, &bmp280.params)) {
-		size = sprintf((char *)Data, "BMP280 initialization failed\n");
-		HAL_UART_Transmit(&huart3, Data, size, 1000);
+		size = sprintf(buffer, "BMP280 initialization failed\n");
+		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 		HAL_Delay(2000);
 	}
 	bool bme280p = bmp280.id == BME280_CHIP_ID;
-	size = sprintf((char *)Data, "BMP280: found %s\n", bme280p ? "BME280" : "BMP280");
-	HAL_UART_Transmit(&huart3, Data, size, 1000);
+	size = sprintf(buffer, "BMP280: found %s\n", bme280p ? "BME280" : "BMP280");
+	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
+	// ******************* Инициализация карты памяти SD ******************************
 	fresult = f_mount(&fs, "/", 1);
 	if (fresult != FR_OK) {
 		send_uart ("ERROR!!! in mounting SD CARD...\n\n");
@@ -178,69 +179,56 @@ int main(void)
   {
 	  //************************ RTC ***********************************************
 
-	  RTC_RX_buffer[0] = 0;
-	  RTC_WriteBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 1);
+	  myRTC.RTC_RX_buffer[0] = 0;
+	  RTC_WriteBuffer(hi2c1, &myRTC, 1);
 
 		while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
 
-		RTC_ReadBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 7);
+		RTC_ReadBuffer(hi2c1, &myRTC, 7);
 
-		date=RTC_RX_buffer[4];
-		date = RTC_ConvertFromDec(date); //Преобразуем в десятичный формат
-		month=RTC_RX_buffer[5];
-		month = RTC_ConvertFromDec(month); //Преобразуем в десятичный формат
-		year=RTC_RX_buffer[6];
-		year = RTC_ConvertFromDec(year); //Преобразуем в десятичный формат
-		day=RTC_RX_buffer[3];
-		day = RTC_ConvertFromDec(day); //Преобразуем в десятичный формат
-		hour=RTC_RX_buffer[2];
-		hour = RTC_ConvertFromDec(hour); //Преобразуем в десятичный формат
-		min=RTC_RX_buffer[1];
-		min = RTC_ConvertFromDec(min); //Преобразуем в десятичный формат
-		sec=RTC_RX_buffer[0];
-		sec = RTC_ConvertFromDec(sec); //Преобразуем в десятичный формат
-
+		myRTC.date = BCD_to_DEC(myRTC.RTC_RX_buffer[4]);
+		myRTC.month = BCD_to_DEC(myRTC.RTC_RX_buffer[5]);
+		myRTC.year = BCD_to_DEC(myRTC.RTC_RX_buffer[6]);
+		myRTC.day = BCD_to_DEC(myRTC.RTC_RX_buffer[3]);
+		myRTC.hour = BCD_to_DEC(myRTC.RTC_RX_buffer[2]);
+		myRTC.min = BCD_to_DEC(myRTC.RTC_RX_buffer[1]);
+		myRTC.sec = BCD_to_DEC(myRTC.RTC_RX_buffer[0]);
 
 	  //*************************** BMP **************************************************
 		HAL_Delay(100);
 		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
-			size = sprintf((char *)Data,
-					"Temperature/pressure reading failed\n");
-			HAL_UART_Transmit(&huart3, Data, size, 1000);
+			size = sprintf(buffer, "Temperature/pressure reading failed\n");
+			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 			HAL_Delay(2000);
 		}
 
 		// **************** DHT *******************************************************
 		if (cycle_counter == 3 || cycle_counter == 6){
 			dht_data = DHT_getData(DHT11);
-			snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
-			//HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 1000);
 		}
 
 		// ****************** передача по UART **************************************
 		clear_buffer();
-		snprintf(buffer, 100, "%02u:%02u:%02u, T = %.2f, H = %d, P = %.2f Pa\n", hour, min, sec, temperature, (uint8_t)dht_data.hum, pressure);
+		// 57 символов в этой строке
+		snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa\n",
+															myRTC.hour, myRTC.min, myRTC.sec,
+															days[myRTC.day-1],
+															myRTC.date, myRTC.month, myRTC.year,
+															temperature, (uint8_t)dht_data.hum, pressure);
 		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
-		//size = sprintf((char *)Data,"P: %.2f Pa, T: %.2f C", , );
-		//HAL_UART_Transmit(&huart3, Data, size, 1000);
-		//size = sprintf((char *)Data, "\n");
-		//HAL_UART_Transmit(&huart3, Data, size, 1000);
-
-		//*****************************************************************************
-
-
+		//************************ вывод на LCD *****************************************************
 		// NB! S-N-PRINTF !!! not a S-PRINTF
-	snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", hour, min, date, month, year);
-	//snprintf(lcd_lower, 17, "%0.1f*C %d %d", temperature, (uint8_t)dht_data.hum, pressure);
+		snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 
-	if (cycle_counter <= 3){
-		snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
-	//lcd_lower[0] = 'A';
-	} else {
-		snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
-	}
+		if (cycle_counter <= 3){
+			snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
+			//lcd_lower[0] = 'A';
+		} else {
+			//snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
+			snprintf(lcd_lower, 17, "%.1f*C  %d%%  %s", temperature, (uint8_t)dht_data.hum, days[myRTC.day-1]);
+		}
 
 	//lcd_clear ();
 	lcd_put_cur(0, 0);
@@ -248,13 +236,22 @@ int main(void)
 	lcd_put_cur(1, 0);
 	lcd_send_string(lcd_lower);
 
-	snprintf(buffer, 100, "%02u\n", cycle_counter);
-	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
+	//snprintf(buffer, 100, "%02u\n", cycle_counter);
+	//HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 	if (cycle_counter == 6) {
+
+		fresult = f_puts(SD_data[0], &fil);
+		fresult = f_puts(SD_data[1], &fil);
+		fresult = f_puts(SD_data[2], &fil);
+		fresult = f_puts(SD_data[3], &fil);
+		fresult = f_puts(SD_data[4], &fil);
+		fresult = f_puts(SD_data[5], &fil);
 		cycle_counter = 1;
 	}
 	else {
+
+		memcpy(SD_data[cycle_counter-1], buffer, strlen(buffer));
 		cycle_counter++;
 	}
 
