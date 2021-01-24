@@ -30,6 +30,7 @@
 #include "DHT.h"
 #include "myRTC.h"
 #include "i2c-lcd.h"
+#include "bmp280.h"
 #include "myFunctions.h"
 /* USER CODE END Includes */
 
@@ -68,9 +69,16 @@ UART_HandleTypeDef huart3;
 	char lcd_lower[16+1];
 	char buffer[BUFFER_SIZE];  // to store strings..
 	char str[100];
-	uint8_t RTC_RX_buffer[8];
 
+	uint8_t RTC_RX_buffer[8];
 	uint8_t sec=0, min=0, hour=0, day=0, date=0, month=0, year=0;
+
+	BMP280_HandleTypedef bmp280;
+	float pressure, temperature, humidity;
+	uint16_t size;
+	uint8_t Data[256];
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -86,6 +94,8 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
 
 /* USER CODE END 0 */
 
@@ -124,14 +134,21 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_SPI1_Init();
-  MX_USART3_UART_Init();
-  MX_ADC1_Init();
-  MX_FATFS_Init();
+  	//set_RTC(hi2c1);
+
+	bmp280_init_default_params(&bmp280.params);
+	bmp280.addr = BMP280_I2C_ADDRESS_0;
+	bmp280.i2c = &hi2c1;
 
 
+	while (!bmp280_init(&bmp280, &bmp280.params)) {
+		size = sprintf((char *)Data, "BMP280 initialization failed\n");
+		HAL_UART_Transmit(&huart3, Data, size, 1000);
+		HAL_Delay(2000);
+	}
+	bool bme280p = bmp280.id == BME280_CHIP_ID;
+	size = sprintf((char *)Data, "BMP280: found %s\n", bme280p ? "BME280" : "BMP280");
+	HAL_UART_Transmit(&huart3, Data, size, 1000);
 
 
 	fresult = f_mount(&fs, "/", 1);
@@ -164,17 +181,42 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  //*****************************************************************************
+		HAL_Delay(100);
+		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
+			size = sprintf((char *)Data,
+					"Temperature/pressure reading failed\n");
+			HAL_UART_Transmit(&huart3, Data, size, 1000);
+			HAL_Delay(2000);
+		}
+
+		size = sprintf((char *)Data,"Pressure: %.2f Pa, Temperature: %.2f C",
+				pressure, temperature);
+		HAL_UART_Transmit(&huart3, Data, size, 1000);
+		if (bme280p) {
+			size = sprintf((char *)Data,", Humidity: %.2f\n", humidity);
+			HAL_UART_Transmit(&huart3, Data, size, 1000);
+		}
+
+		else {
+			size = sprintf((char *)Data, "\n");
+			HAL_UART_Transmit(&huart3, Data, size, 1000);
+		}
+		//*****************************************************************************
+
+
 	  dht_data = DHT_getData(DHT11);
 	  snprintf(str, 100, "H = %d, T = %d\n", (uint8_t)dht_data.hum, (uint8_t)dht_data.temp);
 	  HAL_UART_Transmit(&huart3, (uint8_t*)str, strlen(str), 1000);
 
 
 	     RTC_RX_buffer[0]=0;
-	     I2C_WriteBuffer(hi2c1,(uint16_t)DEVICE_ADDR_RTC, 1);
+	     RTC_WriteBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 1);
 
 		while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
 
-		I2C_ReadBuffer(hi2c1,(uint16_t)0xD0,7);
+		RTC_ReadBuffer(hi2c1, (uint16_t)DEVICE_ADDR_RTC, 7);
 
 		date=RTC_RX_buffer[4];
 		date = RTC_ConvertFromDec(date); //Преобразуем в десятичный формат
@@ -198,7 +240,7 @@ int main(void)
 
 
 
-	snprintf(lcd_upper, 17, "%02u:%02u:%02u", hour, min, sec);
+	snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", hour, min, date, month, year);
 	lcd_clear ();
 	lcd_put_cur(0, 0);
 	lcd_send_string(lcd_upper);

@@ -21,10 +21,11 @@ uint8_t RTC_ConvertFromDec(uint8_t c);
 uint8_t RTC_ConvertFromBinDec(uint8_t c);
 
 
-void I2C_WriteBuffer(I2C_HandleTypeDef hi, uint8_t DEV_ADDR, uint8_t sizebuf);
+void RTC_WriteBuffer(I2C_HandleTypeDef hi, uint8_t DEV_ADDR, uint8_t sizebuf);
 
 
-void I2C_ReadBuffer(I2C_HandleTypeDef hi, uint8_t DEV_ADDR, uint8_t sizebuf);
+void RTC_ReadBuffer(I2C_HandleTypeDef hi, uint8_t DEV_ADDR, uint8_t sizebuf);
 
+void set_RTC(I2C_HandleTypeDef hi);
 
 #endif
