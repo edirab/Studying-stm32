@@ -106,7 +106,7 @@ void update_RTC(RTC_DS3231 *myRTC, uint8_t direction){
 			myRTC->year += 1 * direction;
 			break;
 		default:
-			sprintf(buffer, "State is %d, nothing to do\n", state);
+			sprintf(buffer, "Dir %d, State is %d, nothing to do\n", direction, state);
 		    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 			break;
 		}

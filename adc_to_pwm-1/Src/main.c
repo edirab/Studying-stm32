@@ -51,7 +51,7 @@
 char trans_str[64] = {0,};
 uint16_t adc = 0;
 
-uint32_t adc0;
+uint32_t adc0_soil;
 uint32_t adc1;
 
 //uint8_t str[] = "USART Transmit\r\n";
@@ -139,14 +139,14 @@ int main(void)
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 		HAL_Delay(500);
 
-		adc0 = ADC_Result(&hadc1, 0);
+		adc0_soil = ADC_Result(&hadc1, 0);
 		adc1 = ADC_Result(&hadc1, 1);
 
-		 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, adc0);
+		 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, adc0_soil);
 		 __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_2, adc1);
 
 		//snprintf(trans_str, 63, "ADC %lu\n", adc0);
-		snprintf(trans_str, 63, "ADC 0: %lu, ADC 1: %lu\n", adc0, adc1);
+		snprintf(trans_str, 63, "ADC 0: %lu, ADC 1: %lu\n", adc0_soil, adc1);
 		HAL_UART_Transmit(&huart3, (uint8_t*)trans_str, strlen(trans_str), 1000);
 
 		//HAL_Delay(500);
