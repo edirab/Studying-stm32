@@ -20,12 +20,15 @@
 
 | STM32F103C8T6 | Назначение | Комментарий |
 | :-----:       | :------:   | -------     |
-| PA4			| SPI1_NSS   | SPI1 для SD-карты.  |
+| PA4			| SPI1_NSS   | SPI1 для SD-карты  |
 | PA5			| SPI1_SCK   | Аппаратное управление выводом ~CS|
 | PA6			| SPI1_MISO  ||
 | PA7			| SPI1_MOSI  ||
 | PA13          | SWDIO      |  Внутрисхемный отладчик |
 | PA14          | SWCLK      ||
+| PB3           | Set        | Кнопки настройки часов  |
+| PB4           | Minus      ||
+| PB5           | Plus       ||
 | PB6           | I2C1_SCL   | Часы реального вмемени и  |
 | PB7           | I2C1_SDA   | LCD 16x2 через расширитель портов|
 | PB8           | DHT 11     ||
@@ -43,6 +46,35 @@
 | SCL			| PB6        ||
 | GND           | GND        ||
 | VCC           | VCC        ||
+
+<style TYPE="text/css">
+code.has-jax {font: inherit; font-size: 100%; background: inherit; border: inherit;}
+</style>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+    tex2jax: {
+        inlineMath: [['$','$'], ['\\(','\\)']],
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'] // removed 'code' entry
+    }
+});
+MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for(i = 0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+    }
+});
+</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS_HTML-full"></script>
+
+
+- Вывод формул на `LATEX` в Markdown
+    ```text
+        $$ p_мм.рт.ст. = p_Паскали / 133.3224
+    ```
+    + <img src="https://render.githubusercontent.com/render/math?math=p_{mm} = \frac{ p_{Pascals} }{ 133.3224 }">
+    + <img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">
+
+
 
 **Сложности отладки**
 ![](./debug.PNG)

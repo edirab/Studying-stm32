@@ -11,7 +11,7 @@
 
 extern UART_HandleTypeDef huart3;
 extern char buffer[];
-
+extern uint8_t state;
 
 typedef struct {
 
@@ -37,6 +37,8 @@ void RTC_WriteBuffer(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC, uint8_t sizebuf);
 
 void RTC_ReadBuffer(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC, uint8_t sizebuf);
 
-void set_RTC(I2C_HandleTypeDef hi);
+void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC);
+
+void update_RTC(RTC_DS3231 *myRTC, uint8_t direction);
 
 #endif

@@ -77,7 +77,10 @@ UART_HandleTypeDef huart3;
 	BMP280_HandleTypedef bmp280;
 	float pressure, temperature, humidity;
 	uint16_t size;
+
+	// App Control
 	uint8_t cycle_counter = 1;
+	uint8_t state = 0;
 
 
 /* USER CODE END PV */
@@ -96,7 +99,30 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
+	switch(GPIO_Pin){
+	case Plus_Pin:
+		size = sprintf(buffer, "+\n");
+		update_RTC(&myRTC, 1);
+		break;
+
+	case Minus_Pin:
+		update_RTC(&myRTC, -1);
+		size = sprintf(buffer, "-\n");
+		break;
+
+	case Set_Pin:
+		state++;
+		size = sprintf(buffer, "s, state = %d\n", state);
+		break;
+	default:
+		size = sprintf(buffer, "!\n");
+		break;
+	}
+	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+	HAL_Delay(50);
+}
 
 /* USER CODE END 0 */
 
@@ -152,7 +178,7 @@ int main(void)
 	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
-	// ******************* Инициализация карты памяти SD ******************************
+	// ******************* �?нициализация карты памяти SD ******************************
 	fresult = f_mount(&fs, "/", 1);
 	if (fresult != FR_OK) {
 		send_uart ("ERROR!!! in mounting SD CARD...\n\n");
@@ -175,90 +201,161 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  //************************ RTC ***********************************************
+	while (1) {
 
-	  myRTC.RTC_RX_buffer[0] = 0;
-	  RTC_WriteBuffer(hi2c1, &myRTC, 1);
+		if (state == 0) { // Нормальный цикл измерения
 
-		while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
+			// ************************ 1. RTC ***********************************************
+			myRTC.RTC_RX_buffer[0] = 0;
+			RTC_WriteBuffer(hi2c1, &myRTC, 1);
 
-		RTC_ReadBuffer(hi2c1, &myRTC, 7);
+			while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
 
-		myRTC.date = BCD_to_DEC(myRTC.RTC_RX_buffer[4]);
-		myRTC.month = BCD_to_DEC(myRTC.RTC_RX_buffer[5]);
-		myRTC.year = BCD_to_DEC(myRTC.RTC_RX_buffer[6]);
-		myRTC.day = BCD_to_DEC(myRTC.RTC_RX_buffer[3]);
-		myRTC.hour = BCD_to_DEC(myRTC.RTC_RX_buffer[2]);
-		myRTC.min = BCD_to_DEC(myRTC.RTC_RX_buffer[1]);
-		myRTC.sec = BCD_to_DEC(myRTC.RTC_RX_buffer[0]);
+			RTC_ReadBuffer(hi2c1, &myRTC, 7);
 
-	  //*************************** BMP **************************************************
-		HAL_Delay(100);
-		while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
-			size = sprintf(buffer, "Temperature/pressure reading failed\n");
+			myRTC.date = BCD_to_DEC(myRTC.RTC_RX_buffer[4]);
+			myRTC.month = BCD_to_DEC(myRTC.RTC_RX_buffer[5]);
+			myRTC.year = BCD_to_DEC(myRTC.RTC_RX_buffer[6]);
+			myRTC.day = BCD_to_DEC(myRTC.RTC_RX_buffer[3]);
+			myRTC.hour = BCD_to_DEC(myRTC.RTC_RX_buffer[2]);
+			myRTC.min = BCD_to_DEC(myRTC.RTC_RX_buffer[1]);
+			myRTC.sec = BCD_to_DEC(myRTC.RTC_RX_buffer[0]);
+
+			// *************************** BMP **************************************************
+			//HAL_Delay(100);
+			while (!bmp280_read_float(&bmp280, &temperature, &pressure, &humidity)) {
+				size = sprintf(buffer, "Temperature/pressure reading failed\n");
+				HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+				HAL_Delay(500);
+			}
+
+			// **************** DHT *******************************************************
+			if (cycle_counter == 3 || cycle_counter == 6){
+				dht_data = DHT_getData(DHT11);
+			}
+
+			// ****************** передача по UART **************************************
+			clear_buffer();
+			// 57 символов в этой строке
+			snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa\n",
+																myRTC.hour, myRTC.min, myRTC.sec,
+																days[myRTC.day-1],
+																myRTC.date, myRTC.month, myRTC.year,
+																temperature, (uint8_t)dht_data.hum, pressure);
 			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
-			HAL_Delay(2000);
+
+
+			//************************ вывод на LCD *****************************************************
+			// NB! S-N-PRINTF !!! not a S-PRINTF
+			snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+
+			if (cycle_counter <= 3){
+				snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
+				//lcd_lower[0] = 'A';
+			} else {
+				//snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
+				snprintf(lcd_lower, 17, "%.1f*C  %02d%%  %s", temperature, (uint8_t)dht_data.hum, days[myRTC.day-1]);
+			}
+
+			//lcd_clear ();
+			lcd_put_cur(0, 0);
+			lcd_send_string(lcd_upper);
+			lcd_put_cur(1, 0);
+			lcd_send_string(lcd_lower);
+
+			//snprintf(buffer, 100, "%02u\n", cycle_counter);
+			//HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
+
+			// *********************** Запись на SD-карту ******************************
+			if (cycle_counter == 6) {
+
+				fresult = f_puts(SD_data[0], &fil);
+				fresult = f_puts(SD_data[1], &fil);
+				fresult = f_puts(SD_data[2], &fil);
+				fresult = f_puts(SD_data[3], &fil);
+				fresult = f_puts(SD_data[4], &fil);
+				fresult = f_puts(SD_data[5], &fil);
+				f_sync(&fil);
+				cycle_counter = 1;
+			}
+			else {
+
+				memcpy(SD_data[cycle_counter-1], buffer, strlen(buffer));
+				cycle_counter++;
+			}
+			HAL_Delay(1000);
 		}
 
-		// **************** DHT *******************************************************
-		if (cycle_counter == 3 || cycle_counter == 6){
-			dht_data = DHT_getData(DHT11);
+		// Настройка часов
+		else if (state > 0 && state < 6) {
+
+			lcd_clear ();
+			// �?сключаем мигание дисплея при обновлении
+			while(state > 0 && state < 6){
+
+				lcd_put_cur(0, 0);
+				snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+				lcd_send_string(lcd_upper);
+				HAL_Delay(500);
+
+				switch(state){
+
+				case 1:
+					lcd_put_cur(0, 0);
+					snprintf(lcd_upper, 17, "--:%02u %02u.%02u.%02u", /* myRTC.hour,*/ myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+					lcd_send_string(lcd_upper);
+					HAL_Delay(500);
+					break;
+				case 2:
+					lcd_put_cur(0, 0);
+					snprintf(lcd_upper, 17, "%02u:-- %02u.%02u.%02u", myRTC.hour, /* myRTC.min,*/ myRTC.date, myRTC.month, myRTC.year);
+					lcd_send_string(lcd_upper);
+					HAL_Delay(500);
+					break;
+				case 3:
+					lcd_put_cur(0, 0);
+					snprintf(lcd_upper, 17, "%02u:%02u --.%02u.%02u", myRTC.hour, myRTC.min, /* myRTC.date,*/ myRTC.month, myRTC.year);
+					lcd_send_string(lcd_upper);
+					HAL_Delay(500);
+					break;
+				case 4:
+					lcd_put_cur(0, 0);
+					snprintf(lcd_upper, 17, "%02u:%02u %02u.--.%02u", myRTC.hour, myRTC.min, myRTC.date, /*myRTC.month,*/ myRTC.year);
+					lcd_send_string(lcd_upper);
+					HAL_Delay(500);
+					break;
+				case 5:
+					lcd_put_cur(0, 0);
+					snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.--", myRTC.hour, myRTC.min, myRTC.date, myRTC.month /*myRTC.year*/);
+					lcd_send_string(lcd_upper);
+					HAL_Delay(500);
+					break;
+
+				case 6:
+					snprintf(lcd_upper, 17, "Set time to %02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+					HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+					set_RTC(hi2c1, &myRTC);
+
+					lcd_put_cur(1, 0);
+					snprintf(lcd_lower, 17, "Saved");
+					lcd_send_string(lcd_lower);
+					HAL_Delay(500);
+					state = 0;
+					break;
+				}
+			}
 		}
+//		else if (state == 6) {
+//			snprintf(lcd_upper, 17, "Set time to %02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+//			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+//			set_RTC(hi2c1, &myRTC);
+//		}
 
-		// ****************** передача по UART **************************************
-		clear_buffer();
-		// 57 символов в этой строке
-		snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa\n",
-															myRTC.hour, myRTC.min, myRTC.sec,
-															days[myRTC.day-1],
-															myRTC.date, myRTC.month, myRTC.year,
-															temperature, (uint8_t)dht_data.hum, pressure);
-		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
-
-
-		//************************ вывод на LCD *****************************************************
-		// NB! S-N-PRINTF !!! not a S-PRINTF
-		snprintf(lcd_upper, 17, "%02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
-
-		if (cycle_counter <= 3){
-			snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
-			//lcd_lower[0] = 'A';
-		} else {
-			//snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
-			snprintf(lcd_lower, 17, "%.1f*C  %d%%  %s", temperature, (uint8_t)dht_data.hum, days[myRTC.day-1]);
+		else {
+			size = sprintf(buffer, "Unknown execution state\n");
+			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+			state = 0;
 		}
-
-	//lcd_clear ();
-	lcd_put_cur(0, 0);
-	lcd_send_string(lcd_upper);
-	lcd_put_cur(1, 0);
-	lcd_send_string(lcd_lower);
-
-	//snprintf(buffer, 100, "%02u\n", cycle_counter);
-	//HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
-
-	if (cycle_counter == 6) {
-
-		fresult = f_puts(SD_data[0], &fil);
-		fresult = f_puts(SD_data[1], &fil);
-		fresult = f_puts(SD_data[2], &fil);
-		fresult = f_puts(SD_data[3], &fil);
-		fresult = f_puts(SD_data[4], &fil);
-		fresult = f_puts(SD_data[5], &fil);
-		f_sync(&fil);
-		cycle_counter = 1;
-	}
-	else {
-
-		memcpy(SD_data[cycle_counter-1], buffer, strlen(buffer));
-		cycle_counter++;
-	}
-
-	HAL_Delay(1000);
-
-
 
     /* USER CODE END WHILE */
 
@@ -482,12 +579,28 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DHT_11_GPIO_Port, DHT_11_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pins : Set_Pin Minus_Pin Plus_Pin */
+  GPIO_InitStruct.Pin = Set_Pin|Minus_Pin|Plus_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /*Configure GPIO pin : DHT_11_Pin */
   GPIO_InitStruct.Pin = DHT_11_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DHT_11_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 3, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
