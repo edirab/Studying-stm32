@@ -86,31 +86,37 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	//RTC_WriteBuffer(hi, (uint16_t)DEVICE_ADDR_RTC, 7);
 }
 
-void update_RTC(RTC_DS3231 *myRTC, uint8_t direction, I2C_HandleTypeDef hi){
+void update_RTC(RTC_DS3231 *myRTC, int8_t direction, I2C_HandleTypeDef hi){
 
-		switch(state){
+		switch(myApp.state){
 		case 1:
+			// Избавляемся от проблемы переполнения прибавлением периода
+			if (direction == -1) myRTC->hour += 24;
 			myRTC->hour += 1 * direction;
 			myRTC->hour %= 24;
 			break;
 		case 2:
+			if (direction == -1) myRTC->min += 60;
 			myRTC->min += 1 * direction;
 			myRTC->min %= 60;
 			break;
 		case 3:
+			if (direction == -1) myRTC->date += 32;
 			myRTC->date += 1 * direction;
 			myRTC->date %= 32;
 			break;
 		case 4:
+			if (direction == -1) myRTC->month += 13;
 			myRTC->month += 1 * direction;
 			myRTC->month %= 13;
 			break;
 		case 5:
+			if (direction == -1) myRTC->year += 100;
 			myRTC->year += 1 * direction;
 			myRTC->year %= 100;
 			break;
 		default:
-			sprintf(buffer, "Dir %d, State is %d, nothing to do\n", direction, state);
+			sprintf(buffer, "Dir %d, State is %d, nothing to do\n", direction, myApp.state);
 		    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 			break;
 		}

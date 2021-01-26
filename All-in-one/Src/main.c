@@ -66,7 +66,7 @@ UART_HandleTypeDef huart3;
 	FRESULT fresult;  // result
 
 	char days[7][4] = { "MON\0", "TUE\0", "WED\0", "THU\0", "FRI\0", "SAT\0", "SUN\0" };
-	char SD_data[6][67];
+	char SD_data[10][88];
 
 	char lcd_upper[16+1];
 	char lcd_lower[16+1];
@@ -82,13 +82,12 @@ UART_HandleTypeDef huart3;
 	// 3700 .. 3850 если взяться пальцами
 	// 1400 .. 3000 при погружении в стакан с кипячёнкой
 	// < 400 - короткое замыкание проводом по выводам
-	uint32_t adc0_soil;
+	uint16_t adc0_soil;
 
-	// App Control
-	uint8_t cycle_counter = 1;
-	uint8_t state = 0;
+	uint16_t adc0_light1;
+	uint16_t adc0_light2;
 
-
+	App myApp = {0, 0, 0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -119,7 +118,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		break;
 
 	case Set_Pin:
-		state++;
+		myApp.state++;
 		//size = sprintf(buffer, "s, state = %d\n", state);
 		break;
 	default:
@@ -131,10 +130,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 }
 
 
-uint32_t ADC_Result(ADC_HandleTypeDef *hadc, uint32_t ch){
+uint16_t ADC_Result(ADC_HandleTypeDef *hadc, uint32_t ch){
 
        ADC_ChannelConfTypeDef sConfig;
-       uint32_t adcResult = 0;
+       uint16_t adcResult = 0;
 
        sConfig.Channel = ch;
        sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -202,7 +201,7 @@ int main(void)
 	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
-	// *******************  Инициализация карты памяти SD ******************************
+	// *******************  �?нициализация карты памяти SD ******************************
 	fresult = f_mount(&fs, "/", 1);
 	if (fresult != FR_OK) {
 		send_uart ("ERROR!!! in mounting SD CARD...\n\n");
@@ -224,7 +223,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (state == 0) { // Нормальный цикл измерения
+		if (myApp.state == 0) { // Нормальный цикл измерения
+			//HAL_GPIO_TogglePin(Debug_GPIO_Port, Debug_Pin);
+			HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_SET);
 
 			// ************************ 1. RTC ***********************************************
 			myRTC.RTC_RX_buffer[0] = 0;
@@ -253,22 +254,25 @@ int main(void)
 
 
 			// ********************** 3. DHT ****************************************************
-			if (cycle_counter == 3 || cycle_counter == 6){
+			if (myApp.lcd_cycle_counter == 3 || myApp.lcd_cycle_counter == 6){
 				dht_data = DHT_getData(DHT11);
 			}
 
 
-			// ********************** 4. Датчик шума ********************************************
-			adc0_soil = ADC_Result(&hadc1, 0);
+			// ********************** 4. Опрос АЦП ********************************************
+			adc0_soil   = ADC_Result(&hadc1, 0);
+			adc0_light1 = ADC_Result(&hadc1, 1);
+			adc0_light2 = ADC_Result(&hadc1, 2);
 
 			// ********************** 5. Передача по UART ***************************************
 			clear_buffer();
-			// 57 символов в этой строке
-			snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa S = %lu\n",
+			// 87 символов в этой строке
+			snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa S = %04d L1 = %04d L2 = %04d\n",
 																myRTC.hour, myRTC.min, myRTC.sec,
 																days[myRTC.day-1],
 																myRTC.date, myRTC.month, myRTC.year,
-																temperature, (uint8_t)dht_data.hum, pressure, adc0_soil);
+																temperature, (uint8_t)dht_data.hum, pressure,
+																adc0_soil, adc0_light1, adc0_light2);
 			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 
@@ -276,7 +280,7 @@ int main(void)
 			// NB! S-N-PRINTF !!! not a S-PRINTF
 			snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 
-			if (cycle_counter <= 3){
+			if (myApp.lcd_cycle_counter < 3){
 				snprintf(lcd_lower, 17, "%.1f*C  %.1f mm", temperature, pressure/133.3244);
 				//lcd_lower[0] = 'A';
 			} else {
@@ -294,40 +298,53 @@ int main(void)
 			//HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 
 			// *********************** 7. Запись на SD-карту ***********************************
-			if (cycle_counter == 6) {
+			if (myApp.sd_cycle_counter == 10) {
 
-				fresult = f_puts(SD_data[0], &fil);
-				fresult = f_puts(SD_data[1], &fil);
-				fresult = f_puts(SD_data[2], &fil);
-				fresult = f_puts(SD_data[3], &fil);
-				fresult = f_puts(SD_data[4], &fil);
-				fresult = f_puts(SD_data[5], &fil);
+				for (uint8_t i = 0; i < 10; i++){
+					fresult = f_puts(SD_data[i], &fil);
+				}
 				f_sync(&fil);
-				cycle_counter = 1;
+
+				// Clear SD_data buffer
+				for (uint8_t i = 0; i < 10; i++){
+					for (uint8_t j = 0; j < 88; j++){
+						SD_data[i][j] = '\0';
+					}
+				}
+				clear_buffer();
+
+				myApp.sd_cycle_counter = 0;
 			}
 			else {
 
-				memcpy(SD_data[cycle_counter-1], buffer, strlen(buffer));
-				cycle_counter++;
+				memcpy(SD_data[myApp.sd_cycle_counter], buffer, strlen(buffer));
+				myApp.sd_cycle_counter++;
 			}
-			HAL_Delay(1000);
+
+			myApp.lcd_cycle_counter++;
+
+
+			if (myApp.lcd_cycle_counter == 6) myApp.lcd_cycle_counter = 0;
+
+			HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_RESET);
+			HAL_Delay(975);
 		}
 
 		// **************************************************************************************
 		// **************************  Настройка часов  *****************************************
 		// **************************************************************************************
-		else if (state > 0 && state < 6) {
+		else if (myApp.state > 0 && myApp.state < 6) {
 
 			lcd_clear ();
 			// �?сключаем мигание дисплея при обновлении
-			while(state > 0 && state < 6){
+			while(myApp.state > 0 && myApp.state < 6){
 
 				lcd_put_cur(0, 0);
 				snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 				lcd_send_string(lcd_upper);
 				HAL_Delay(500);
 
-				switch(state){
+				switch(myApp.state){
 
 				case 1:
 					lcd_put_cur(0, 0);
@@ -369,7 +386,7 @@ int main(void)
 					snprintf(lcd_lower, 17, "Saved");
 					lcd_send_string(lcd_lower);
 					HAL_Delay(500);
-					state = 0;
+					myApp.state = 0;
 					break;
 				}
 			}
@@ -383,7 +400,7 @@ int main(void)
 		else {
 			size = sprintf(buffer, "Unknown execution state\n");
 			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
-			state = 0;
+			myApp.state = 0;
 		}
 
     /* USER CODE END WHILE */
@@ -606,20 +623,20 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(DHT_11_GPIO_Port, DHT_11_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Debug_Pin|DHT_11_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : Debug_Pin DHT_11_Pin */
+  GPIO_InitStruct.Pin = Debug_Pin|DHT_11_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Set_Pin Minus_Pin Plus_Pin */
   GPIO_InitStruct.Pin = Set_Pin|Minus_Pin|Plus_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : DHT_11_Pin */
-  GPIO_InitStruct.Pin = DHT_11_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(DHT_11_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI3_IRQn, 3, 0);

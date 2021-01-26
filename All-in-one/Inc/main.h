@@ -38,6 +38,12 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+// App Control
+typedef struct {
+	uint8_t lcd_cycle_counter;
+	uint8_t sd_cycle_counter;
+	uint8_t state;
+} App;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -58,6 +64,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Debug_Pin GPIO_PIN_0
+#define Debug_GPIO_Port GPIOB
 #define Set_Pin GPIO_PIN_3
 #define Set_GPIO_Port GPIOB
 #define Set_EXTI_IRQn EXTI3_IRQn
