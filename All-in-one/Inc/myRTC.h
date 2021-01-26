@@ -39,6 +39,6 @@ void RTC_ReadBuffer(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC, uint8_t sizebuf);
 
 void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC);
 
-void update_RTC(RTC_DS3231 *myRTC, uint8_t direction);
+void update_RTC(RTC_DS3231 *myRTC, uint8_t direction, I2C_HandleTypeDef hi);
 
 #endif

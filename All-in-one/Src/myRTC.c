@@ -86,31 +86,35 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	//RTC_WriteBuffer(hi, (uint16_t)DEVICE_ADDR_RTC, 7);
 }
 
-void update_RTC(RTC_DS3231 *myRTC, uint8_t direction){
+void update_RTC(RTC_DS3231 *myRTC, uint8_t direction, I2C_HandleTypeDef hi){
 
-	if(direction){
 		switch(state){
 		case 1:
 			myRTC->hour += 1 * direction;
+			myRTC->hour %= 24;
 			break;
 		case 2:
 			myRTC->min += 1 * direction;
+			myRTC->min %= 60;
 			break;
 		case 3:
 			myRTC->date += 1 * direction;
+			myRTC->date %= 32;
 			break;
 		case 4:
 			myRTC->month += 1 * direction;
+			myRTC->month %= 13;
 			break;
 		case 5:
 			myRTC->year += 1 * direction;
+			myRTC->year %= 100;
 			break;
 		default:
 			sprintf(buffer, "Dir %d, State is %d, nothing to do\n", direction, state);
 		    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 			break;
 		}
-	}
+		set_RTC(hi, myRTC);
 
 
 }

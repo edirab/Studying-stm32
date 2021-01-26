@@ -110,11 +110,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	switch(GPIO_Pin){
 	case Plus_Pin:
 		//size = sprintf(buffer, "+\n");
-		update_RTC(&myRTC, 1);
+		update_RTC(&myRTC, 1, hi2c1);
 		break;
 
 	case Minus_Pin:
-		update_RTC(&myRTC, -1);
+		update_RTC(&myRTC, -1, hi2c1);
 		//size = sprintf(buffer, "-\n");
 		break;
 
