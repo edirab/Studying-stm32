@@ -1,0 +1,12 @@
+(sym_lib_table
+  (lib (name YAAJ_BlackPill)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BlackPill.lib)(options "")(descr ""))
+  (lib (name YAAJ_BlackPill_Part_Like)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BlackPill_Part_Like.lib)(options "")(descr ""))
+  (lib (name YAAJ_BlackPill_Part_Like_SWD_Breakout)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BlackPill_Part_Like_SWD_Breakout.lib)(options "")(descr ""))
+  (lib (name YAAJ_BlackPill_SWD_Breakout)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BlackPill_SWD_Breakout.lib)(options "")(descr ""))
+  (lib (name YAAJ_BluePill)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BluePill.lib)(options "")(descr ""))
+  (lib (name YAAJ_BluePill_Part_Like)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BluePill_Part_Like.lib)(options "")(descr ""))
+  (lib (name YAAJ_BluePill_Part_Like_SWD_Breakout)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BluePill_Part_Like_SWD_Breakout.lib)(options "")(descr ""))
+  (lib (name YAAJ_BluePill_SWD_Breakout)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Symbols/YAAJ_BluePill_SWD_Breakout.lib)(options "")(descr ""))
+  (lib (name megasaturnv_custom_components)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/kicad-custom-components-library-master/megasaturnv_custom_components.lib)(options "")(descr ""))
+  (lib (name tinkerforge)(type Legacy)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/kicad-libraries-master/tinkerforge.lib)(options "")(descr ""))
+)
