@@ -1,17 +1,4 @@
 
-
-- PB6 -> I2C1_SCL (0x4E для LCD, 0xD0 для часов DS3231)
-- PB7 -> I2C1_SDA
-- PB8 -> DHT 11
-
-- PB10 -> UART3_TX (на правой стороне платы)
-- PB11 -> UART3_RX
-
-- PA4 -> SPI1_NSS
-- PA5 -> SPI1_SCK
-- PA6 -> SPI1_MISO
-- PA7 -> SPI1_MOSI
-
 ### Лабораторные по программированию stm32 в рамках курса 
 #### *"Интеллектуальные системы в мехатронике и робототехнике"*
 
@@ -35,8 +22,8 @@
 - **Приложение Б** с.52 Программа для ознакомления с модулями МПС ADC и таймером в режиме формирования ШИМ
 
 
-![](./literature/bluepillpinout.gif)
+![](./Literature/bluepillpinout.gif)
 
 ***
 
-![](./literature/breadboard_2.jpg)
+![](./Literature/breadboard_2.jpg)
