@@ -32,7 +32,7 @@ void RTC_WriteBuffer(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC, uint8_t sizebuf) {
 
 	   if (HAL_I2C_GetError(&hi) != HAL_I2C_ERROR_AF) {
 
-			   sprintf(buffer, "Buffer error");
+			   sprintf(buffer, "Buffer error in RTC_WriteBuffer \n");
 			   HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 	   }
 	}
@@ -47,7 +47,7 @@ void RTC_ReadBuffer(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC, uint8_t sizebuf) {
 
 	   if (HAL_I2C_GetError(&hi) != HAL_I2C_ERROR_AF) {
 
-			   sprintf(buffer, "Buffer error");
+			   sprintf(buffer, "Buffer error in 'RTC_ReadBuffer'\n");
 			   HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 	   }
 	}
@@ -75,13 +75,16 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	data[6] = DEC_to_BCD(myRTC->month);	// month
 	data[7] = DEC_to_BCD(myRTC->year);	// year - 2021
 
+
+	HAL_GPIO_WritePin(Debug_LED_G_GPIO_Port, Debug_LED_G_Pin, GPIO_PIN_SET);
 	while(HAL_I2C_Master_Transmit(&hi, (uint16_t)DEVICE_ADDR_RTC, (uint8_t*) &data, 8, (uint32_t)1000)!= HAL_OK) {
 
 	   if (HAL_I2C_GetError(&hi) != HAL_I2C_ERROR_AF) {
-			   sprintf(buffer, "Buffer error");
+			   sprintf(buffer, "Buffer error in set_RTC \n");
 			   HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 1000);
 	   }
 	}
+	HAL_GPIO_WritePin(Debug_LED_G_GPIO_Port, Debug_LED_G_Pin, GPIO_PIN_RESET);
 
 	//RTC_WriteBuffer(hi, (uint16_t)DEVICE_ADDR_RTC, 7);
 }

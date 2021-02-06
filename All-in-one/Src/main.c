@@ -106,6 +106,7 @@ static void MX_SPI1_Init(void);
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
+	__disable_irq();
 	switch(GPIO_Pin){
 	case Plus_Pin:
 		//size = sprintf(buffer, "+\n");
@@ -126,7 +127,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		break;
 	}
 	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
-	HAL_Delay(50);
+	clear_buffer();
+	__enable_irq();
+	HAL_Delay(20);
 }
 
 
@@ -225,7 +228,7 @@ int main(void)
 
 		if (myApp.state == 0) { // Нормальный цикл измерения
 			//HAL_GPIO_TogglePin(Debug_GPIO_Port, Debug_Pin);
-			HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(Debug_LED_Y_GPIO_Port, Debug_LED_Y_Pin, GPIO_PIN_SET);
 
 			// ************************ 1. RTC ***********************************************
 			myRTC.RTC_RX_buffer[0] = 0;
@@ -326,7 +329,7 @@ int main(void)
 
 			if (myApp.lcd_cycle_counter == 6) myApp.lcd_cycle_counter = 0;
 
-			HAL_GPIO_WritePin(Debug_GPIO_Port, Debug_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(Debug_LED_Y_GPIO_Port, Debug_LED_Y_Pin, GPIO_PIN_RESET);
 			HAL_Delay(975);
 		}
 
@@ -342,39 +345,39 @@ int main(void)
 				lcd_put_cur(0, 0);
 				snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 				lcd_send_string(lcd_upper);
-				HAL_Delay(500);
+				//HAL_Delay(500);
 
 				switch(myApp.state){
 
 				case 1:
 					lcd_put_cur(0, 0);
-					snprintf(lcd_upper, 17, "--:%02u %02u/%02u/%02u", /* myRTC.hour,*/ myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "  :%02u %02u/%02u/%02u", /* myRTC.hour,*/ myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 					lcd_send_string(lcd_upper);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					break;
 				case 2:
 					lcd_put_cur(0, 0);
-					snprintf(lcd_upper, 17, "%02u:-- %02u/%02u/%02u", myRTC.hour, /* myRTC.min,*/ myRTC.date, myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "%02u:   %02u/%02u/%02u", myRTC.hour, /* myRTC.min,*/ myRTC.date, myRTC.month, myRTC.year);
 					lcd_send_string(lcd_upper);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					break;
 				case 3:
 					lcd_put_cur(0, 0);
-					snprintf(lcd_upper, 17, "%02u:%02u dd/%02u/%02u", myRTC.hour, myRTC.min, /* myRTC.date,*/ myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "%02u:%02u   /%02u/%02u", myRTC.hour, myRTC.min, /* myRTC.date,*/ myRTC.month, myRTC.year);
 					lcd_send_string(lcd_upper);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					break;
 				case 4:
 					lcd_put_cur(0, 0);
-					snprintf(lcd_upper, 17, "%02u:%02u %02u/mm/%02u", myRTC.hour, myRTC.min, myRTC.date, /*myRTC.month,*/ myRTC.year);
+					snprintf(lcd_upper, 17, "%02u:%02u %02u/  /%02u", myRTC.hour, myRTC.min, myRTC.date, /*myRTC.month,*/ myRTC.year);
 					lcd_send_string(lcd_upper);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					break;
 				case 5:
 					lcd_put_cur(0, 0);
-					snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/yy", myRTC.hour, myRTC.min, myRTC.date, myRTC.month /*myRTC.year*/);
+					snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/  ", myRTC.hour, myRTC.min, myRTC.date, myRTC.month /*myRTC.year*/);
 					lcd_send_string(lcd_upper);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					break;
 
 				case 6:
@@ -385,7 +388,7 @@ int main(void)
 					lcd_put_cur(1, 0);
 					snprintf(lcd_lower, 17, "Saved");
 					lcd_send_string(lcd_lower);
-					HAL_Delay(500);
+					//HAL_Delay(500);
 					myApp.state = 0;
 					break;
 				}
@@ -623,10 +626,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Debug_Pin|DHT_11_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, Debug_LED_Y_Pin|Debug_LED_G_Pin|DHT_11_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Debug_Pin DHT_11_Pin */
-  GPIO_InitStruct.Pin = Debug_Pin|DHT_11_Pin;
+  /*Configure GPIO pins : Debug_LED_Y_Pin Debug_LED_G_Pin DHT_11_Pin */
+  GPIO_InitStruct.Pin = Debug_LED_Y_Pin|Debug_LED_G_Pin|DHT_11_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
