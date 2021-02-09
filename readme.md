@@ -25,5 +25,8 @@
 ![](./Literature/bluepillpinout.gif)
 
 ***
+![](./Literature/STM32-Bluepill-schematic.jpg)
+
+***
 
 ![](./Literature/breadboard_2.jpg)
