@@ -345,54 +345,42 @@ int main(void)
 				lcd_put_cur(0, 0);
 				snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 				lcd_send_string(lcd_upper);
-				//HAL_Delay(500);
+				HAL_Delay(500);
+
+				lcd_put_cur(0, 0);
 
 				switch(myApp.state){
 
 				case 1:
-					lcd_put_cur(0, 0);
 					snprintf(lcd_upper, 17, "  :%02u %02u/%02u/%02u", /* myRTC.hour,*/ myRTC.min, myRTC.date, myRTC.month, myRTC.year);
-					lcd_send_string(lcd_upper);
-					//HAL_Delay(500);
 					break;
 				case 2:
-					lcd_put_cur(0, 0);
 					snprintf(lcd_upper, 17, "%02u:   %02u/%02u/%02u", myRTC.hour, /* myRTC.min,*/ myRTC.date, myRTC.month, myRTC.year);
-					lcd_send_string(lcd_upper);
-					//HAL_Delay(500);
 					break;
 				case 3:
-					lcd_put_cur(0, 0);
 					snprintf(lcd_upper, 17, "%02u:%02u   /%02u/%02u", myRTC.hour, myRTC.min, /* myRTC.date,*/ myRTC.month, myRTC.year);
-					lcd_send_string(lcd_upper);
-					//HAL_Delay(500);
 					break;
 				case 4:
-					lcd_put_cur(0, 0);
 					snprintf(lcd_upper, 17, "%02u:%02u %02u/  /%02u", myRTC.hour, myRTC.min, myRTC.date, /*myRTC.month,*/ myRTC.year);
-					lcd_send_string(lcd_upper);
-					//HAL_Delay(500);
 					break;
 				case 5:
-					lcd_put_cur(0, 0);
 					snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/  ", myRTC.hour, myRTC.min, myRTC.date, myRTC.month /*myRTC.year*/);
-					lcd_send_string(lcd_upper);
-					//HAL_Delay(500);
 					break;
 
 				case 6:
-					snprintf(lcd_upper, 17, "Set time to %02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+					snprintf(buffer, 100, "Set time to %02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 					HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 					set_RTC(hi2c1, &myRTC);
 
 					lcd_put_cur(1, 0);
 					snprintf(lcd_lower, 17, "Saved");
-					lcd_send_string(lcd_lower);
-					//HAL_Delay(500);
 					myApp.state = 0;
 					break;
 				}
+				lcd_send_string(lcd_upper);
+				HAL_Delay(500);
 			}
+			clear_buffer();
 		}
 //		else if (state == 6) {
 //			snprintf(lcd_upper, 17, "Set time to %02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
@@ -404,6 +392,7 @@ int main(void)
 			size = sprintf(buffer, "Unknown execution state\n");
 			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 			myApp.state = 0;
+			clear_buffer();
 		}
 
     /* USER CODE END WHILE */
@@ -665,7 +654,9 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-
+	snprintf(buffer, 100, "SError Handler\n");
+	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+	clear_buffer();
   /* USER CODE END Error_Handler_Debug */
 }
 

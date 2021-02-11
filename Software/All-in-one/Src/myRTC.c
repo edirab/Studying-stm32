@@ -76,6 +76,7 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	data[7] = DEC_to_BCD(myRTC->year);	// year - 2021
 
 
+	__disable_irq();
 	HAL_GPIO_WritePin(Debug_LED_G_GPIO_Port, Debug_LED_G_Pin, GPIO_PIN_SET);
 	while(HAL_I2C_Master_Transmit(&hi, (uint16_t)DEVICE_ADDR_RTC, (uint8_t*) &data, 8, (uint32_t)1000)!= HAL_OK) {
 
@@ -85,7 +86,7 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	   }
 	}
 	HAL_GPIO_WritePin(Debug_LED_G_GPIO_Port, Debug_LED_G_Pin, GPIO_PIN_RESET);
-
+	__enable_irq();
 	//RTC_WriteBuffer(hi, (uint16_t)DEVICE_ADDR_RTC, 7);
 }
 
