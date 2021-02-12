@@ -1,3 +1,5 @@
 (fp_lib_table
-  (lib (name Footprints)(type KiCad)(uri C:/Users/corsair/Documents/Studying-stm32/All-in-one/HW/Kicad-STM32-master/Footprints)(options "")(descr ""))
+  (lib (name Footprints)(type KiCad)(uri F:/Studying-stm32/Hardware/Kicad-STM32-master/Footprints)(options "")(descr ""))
+  (lib (name kicad-libraries-master)(type KiCad)(uri F:/Studying-stm32/Hardware/kicad-libraries-master)(options "")(descr ""))
+  (lib (name megasaturnv_custom_components)(type KiCad)(uri F:/Studying-stm32/Hardware/kicad-custom-components-library-master/megasaturnv_custom_components.pretty)(options "")(descr ""))
 )
