@@ -70,7 +70,7 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 	data[1] = DEC_to_BCD(myRTC->sec);	// sec
 	data[2] = DEC_to_BCD(myRTC->min);	// min
 	data[3] = DEC_to_BCD(myRTC->hour);	// hour
-	data[4] = DEC_to_BCD(1);	// day - SUN
+	data[4] = DEC_to_BCD(myRTC->day);	// day - SUN
 	data[5] = DEC_to_BCD(myRTC->date);	// date
 	data[6] = DEC_to_BCD(myRTC->month);	// month
 	data[7] = DEC_to_BCD(myRTC->year);	// year - 2021
@@ -104,21 +104,32 @@ void update_RTC(RTC_DS3231 *myRTC, int8_t direction, I2C_HandleTypeDef hi){
 			myRTC->min += 1 * direction;
 			myRTC->min %= 60;
 			break;
+
 		case 3:
+			myRTC->sec = 0; // секунды всегда сбрасываем по любому нажатию
+			break;
+
+		case 4:
 			if (direction == -1) myRTC->date += 32;
 			myRTC->date += 1 * direction;
 			myRTC->date %= 32;
 			break;
-		case 4:
+		case 5:
 			if (direction == -1) myRTC->month += 13;
 			myRTC->month += 1 * direction;
 			myRTC->month %= 13;
 			break;
-		case 5:
+		case 6:
 			if (direction == -1) myRTC->year += 100;
 			myRTC->year += 1 * direction;
 			myRTC->year %= 100;
 			break;
+		case 7:
+			if (direction == -1) myRTC->day += 7;
+			myRTC->day += 1 * direction;
+			myRTC->day %= 7;
+			break;
+
 		default:
 			sprintf(buffer, "Dir %d, State is %d, nothing to do\n", direction, myApp.state);
 		    HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);

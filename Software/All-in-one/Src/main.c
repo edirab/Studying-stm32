@@ -65,7 +65,7 @@ UART_HandleTypeDef huart3;
 	FIL fil; // File
 	FRESULT fresult;  // result
 
-	char days[7][4] = { "MON\0", "TUE\0", "WED\0", "THU\0", "FRI\0", "SAT\0", "SUN\0" };
+	char days[7][4] = {"SUN\0", "MON\0", "TUE\0", "WED\0", "THU\0", "FRI\0", "SAT\0"}; // <-----
 	char SD_data[10][88];
 
 	char lcd_upper[16+1];
@@ -272,7 +272,7 @@ int main(void)
 			// 87 символов в этой строке
 			snprintf(buffer, 100, "%02u:%02u:%02u %s %02u/%02u/%02u T = %.2f*C H = %02d%% P = %.2f Pa S = %04d L1 = %04d L2 = %04d\n",
 																myRTC.hour, myRTC.min, myRTC.sec,
-																days[myRTC.day-1],
+																days[myRTC.day],
 																myRTC.date, myRTC.month, myRTC.year,
 																temperature, (uint8_t)dht_data.hum, pressure,
 																adc0_soil, adc0_light1, adc0_light2);
@@ -288,7 +288,7 @@ int main(void)
 				//lcd_lower[0] = 'A';
 			} else {
 				//snprintf(lcd_lower, 17, "%.1f*C  %d%%     ", temperature, (uint8_t)dht_data.hum);
-				snprintf(lcd_lower, 17, "%.1f*C  %02d%%  %s", temperature, (uint8_t)dht_data.hum, days[myRTC.day-1]);
+				snprintf(lcd_lower, 17, "%.1f*C  %02d%%  %s", temperature, (uint8_t)dht_data.hum, days[myRTC.day]);
 			}
 
 			//lcd_clear ();
@@ -336,48 +336,92 @@ int main(void)
 		// **************************************************************************************
 		// **************************  Настройка часов  *****************************************
 		// **************************************************************************************
-		else if (myApp.state > 0 && myApp.state < 6) {
+		else if (myApp.state > 0 && myApp.state < 9) {
 
-			lcd_clear ();
-			// �?сключаем мигание дисплея при обновлении
-			while(myApp.state > 0 && myApp.state < 6){
+			lcd_clear();
+			for (uint8_t i = 0; i < 17; i++){
+				lcd_upper[i] = '\0';
+				lcd_lower[i] = '\0';
+			}
 
+			while(myApp.state > 0 && myApp.state < 9){
+
+
+				// Считываем значение из часов
+				myRTC.RTC_RX_buffer[0] = 0;
+				RTC_WriteBuffer(hi2c1, &myRTC, 1);
+
+				while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {}
+
+				RTC_ReadBuffer(hi2c1, &myRTC, 7);
+
+				myRTC.date = BCD_to_DEC(myRTC.RTC_RX_buffer[4]);
+				myRTC.month = BCD_to_DEC(myRTC.RTC_RX_buffer[5]);
+				myRTC.year = BCD_to_DEC(myRTC.RTC_RX_buffer[6]);
+				myRTC.day = BCD_to_DEC(myRTC.RTC_RX_buffer[3]);
+				myRTC.hour = BCD_to_DEC(myRTC.RTC_RX_buffer[2]);
+				myRTC.min = BCD_to_DEC(myRTC.RTC_RX_buffer[1]);
+				myRTC.sec = BCD_to_DEC(myRTC.RTC_RX_buffer[0]);
+
+
+				snprintf(lcd_upper, 17, "%02u:%02u:%02u", myRTC.hour, myRTC.min, myRTC.sec);
+				snprintf(lcd_lower, 17, "%02u/%02u/%02u %s", myRTC.date, myRTC.month, myRTC.year, days[myRTC.day]);
+
+				//lcd_clear();
 				lcd_put_cur(0, 0);
-				snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 				lcd_send_string(lcd_upper);
+				lcd_put_cur(1, 0);
+				lcd_send_string(lcd_lower);
 				HAL_Delay(500);
-
-				lcd_put_cur(0, 0);
 
 				switch(myApp.state){
 
+				// часы
 				case 1:
-					snprintf(lcd_upper, 17, "  :%02u %02u/%02u/%02u", /* myRTC.hour,*/ myRTC.min, myRTC.date, myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "  :%02u:%02u", /* myRTC.hour,*/ myRTC.min, myRTC.sec);
 					break;
+				// минуты
 				case 2:
-					snprintf(lcd_upper, 17, "%02u:   %02u/%02u/%02u", myRTC.hour, /* myRTC.min,*/ myRTC.date, myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "%02u:  :%02u", myRTC.hour, /* myRTC.min,*/ myRTC.sec);
 					break;
+				// секунды
 				case 3:
-					snprintf(lcd_upper, 17, "%02u:%02u   /%02u/%02u", myRTC.hour, myRTC.min, /* myRTC.date,*/ myRTC.month, myRTC.year);
+					snprintf(lcd_upper, 17, "%02u:%02u:  ", myRTC.hour, myRTC.min /* myRTC.sec,*/);
 					break;
+				// число
 				case 4:
-					snprintf(lcd_upper, 17, "%02u:%02u %02u/  /%02u", myRTC.hour, myRTC.min, myRTC.date, /*myRTC.month,*/ myRTC.year);
+					snprintf(lcd_lower, 17, "  /%02u/%02u %s", /*myRTC.date*/ myRTC.month, myRTC.year, days[myRTC.day]);
 					break;
+				// месяц
 				case 5:
-					snprintf(lcd_upper, 17, "%02u:%02u %02u/%02u/  ", myRTC.hour, myRTC.min, myRTC.date, myRTC.month /*myRTC.year*/);
+					snprintf(lcd_lower, 17, "%02u/  /%02u %s", myRTC.date, /*myRTC.month,*/ myRTC.year, days[myRTC.day]);
 					break;
-
+				// год
 				case 6:
+					snprintf(lcd_lower, 17, "%02u/%02u/   %s", myRTC.date, myRTC.month /*myRTC.year*/, days[myRTC.day]);
+					break;
+				// день недели
+				case 7:
+					snprintf(lcd_lower, 17, "%02u/%02u/%02u    ", myRTC.date, myRTC.month, myRTC.year /*days[myRTC.day]*/);
+					break;
+				// сохранено!
+				case 8:
 					snprintf(buffer, 100, "Set time to %02u:%02u %02u/%02u/%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
 					HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
-					set_RTC(hi2c1, &myRTC);
+					//set_RTC(hi2c1, &myRTC);
 
+					lcd_clear();
 					lcd_put_cur(1, 0);
 					snprintf(lcd_lower, 17, "Saved");
 					myApp.state = 0;
 					break;
 				}
+
+				lcd_put_cur(0, 0);
 				lcd_send_string(lcd_upper);
+				lcd_put_cur(1, 0);
+				lcd_send_string(lcd_lower);
+
 				HAL_Delay(500);
 			}
 			clear_buffer();
