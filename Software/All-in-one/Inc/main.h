@@ -43,6 +43,7 @@ typedef struct {
 	uint8_t lcd_cycle_counter;
 	uint8_t sd_cycle_counter;
 	uint8_t state;
+	uint8_t settings_counter; // Через 30 секунд если пользователь не произвёл никакого действия, завершаем цикл настройки часов
 } App;
 /* USER CODE END ET */
 

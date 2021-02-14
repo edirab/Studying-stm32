@@ -115,10 +115,10 @@ void update_RTC(RTC_DS3231 *myRTC, int8_t direction, I2C_HandleTypeDef hi){
 			myRTC->year += 1 * direction;
 			myRTC->year %= 100;
 			break;
-		case 7:
+		case 7:	// 1 .. 7 (!), SUN - первый
 			if (direction == -1) myRTC->day += 7;
 			myRTC->day += 1 * direction;
-			myRTC->day %= 7;
+			myRTC->day %= 8;
 			break;
 
 		default:

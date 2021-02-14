@@ -19,7 +19,7 @@ typedef struct {
 	uint8_t sec;
 	uint8_t min;
 	uint8_t hour;
-	uint8_t day; //e.i. MON, TUE, WED, THU, FRI
+	uint8_t day; //e.i. SUN, MON, TUE, WED, THU, FRI
 	uint8_t date;
 	uint8_t month;
 	uint8_t year;
