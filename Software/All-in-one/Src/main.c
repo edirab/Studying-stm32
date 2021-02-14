@@ -101,6 +101,10 @@ void SystemClock_Config(void);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	__disable_irq();
+
+	// Фиксируем, что произошло действие от пользователя
+	myApp.settings_counter = 0;
+
 	switch(GPIO_Pin){
 	case Plus_Pin:
 		//size = sprintf(buffer, "+\n");
@@ -118,11 +122,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		//size = sprintf(buffer, "s, state = %d\n", state);
 		break;
 	default:
-		size = sprintf(buffer, "!\n");
+		//size = sprintf(buffer, "!\n");
 		break;
 	}
-	HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
-	clear_buffer();
+	//HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
+	//clear_buffer();
 	__enable_irq();
 	HAL_Delay(20);
 }
@@ -413,6 +417,7 @@ int main(void)
 					lcd_put_cur(1, 0);
 					snprintf(lcd_lower, 17, "Saved");
 					myApp.state = 0;
+					myApp.settings_counter = 0;
 					break;
 				}
 
@@ -423,7 +428,14 @@ int main(void)
 
 				HAL_Delay(500);
 				HAL_IWDG_Refresh(&hiwdg);
-			}
+
+				// Выходим из настройки, если пользователь ничего не сделал в течение 30 секунд
+				myApp.settings_counter++;
+				if (myApp.settings_counter == 30){
+					//break;
+					myApp.state = 8;
+				}
+			} // end while(myApp.state > 0 && myApp.state < 9)
 			clear_buffer();
 		}
 		else {
