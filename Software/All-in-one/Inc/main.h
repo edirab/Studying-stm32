@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -45,7 +45,8 @@ typedef struct {
 	uint8_t lcd_cycle_counter;
 	uint8_t sd_cycle_counter;
 	uint8_t state;
-	uint8_t settings_counter; // Через 30 секунд если пользователь не произвёл никакого действия, завершаем цикл настройки часов
+	uint8_t settings_counter; // Через MAX_SETTINGS_COUNTER секунд если пользователь не произвёл никакого действия, завершаем цикл настройки часов
+	uint8_t x10; 			  // или 1, или 10. 1 при уможении ничего не изменит
 } App;
 /* USER CODE END ET */
 
@@ -71,6 +72,9 @@ void Error_Handler(void);
 #define Debug_LED_Y_GPIO_Port GPIOB
 #define Debug_LED_G_Pin GPIO_PIN_1
 #define Debug_LED_G_GPIO_Port GPIOB
+#define x10_Pin GPIO_PIN_15
+#define x10_GPIO_Port GPIOA
+#define x10_EXTI_IRQn EXTI15_10_IRQn
 #define Set_Pin GPIO_PIN_3
 #define Set_GPIO_Port GPIOB
 #define Set_EXTI_IRQn EXTI3_IRQn

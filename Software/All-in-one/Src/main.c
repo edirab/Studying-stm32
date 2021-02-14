@@ -86,7 +86,7 @@
 	uint16_t adc0_light1;
 	uint16_t adc0_light2;
 
-	App myApp = {0, 0, 0, 0};
+	App myApp = {0, 0, 0, 0, x10_RELEASED};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -120,6 +120,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	case Set_Pin:
 		myApp.state++;
 		//size = sprintf(buffer, "s, state = %d\n", state);
+		break;
+
+	case x10_Pin:
+		if (HAL_GPIO_ReadPin(x10_GPIO_Port, x10_Pin) == GPIO_PIN_SET) {
+			myApp.x10 = x10_PRESSED;
+			size = sprintf(buffer, "x10 pressed\n");
+		}else{
+			myApp.x10 = x10_RELEASED;
+			size = sprintf(buffer, "x10 released\n");
+		}
+		HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
 		break;
 	default:
 		//size = sprintf(buffer, "!\n");

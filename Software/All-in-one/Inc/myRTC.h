@@ -8,6 +8,8 @@
 #include "main.h"
 
 #define DEVICE_ADDR_RTC 0xD0
+#define x10_PRESSED 10
+#define x10_RELEASED 1
 
 extern UART_HandleTypeDef huart3;
 extern char buffer[];

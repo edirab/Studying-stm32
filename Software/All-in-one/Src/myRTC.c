@@ -87,12 +87,12 @@ void update_RTC(RTC_DS3231 *myRTC, int8_t direction, I2C_HandleTypeDef hi){
 		case 1:
 			// Избавляемся от проблемы переполнения прибавлением периода
 			if (direction == -1) myRTC->hour += 24;
-			myRTC->hour += 1 * direction;
+			myRTC->hour += 1 * direction * myApp.x10;
 			myRTC->hour %= 24;
 			break;
 		case 2:
 			if (direction == -1) myRTC->min += 60;
-			myRTC->min += 1 * direction;
+			myRTC->min += 1 * direction * myApp.x10;
 			myRTC->min %= 60;
 			break;
 
@@ -102,25 +102,21 @@ void update_RTC(RTC_DS3231 *myRTC, int8_t direction, I2C_HandleTypeDef hi){
 
 		case 4:
 			if (direction == -1) myRTC->date += 32;
-			myRTC->date += 1 * direction;
+			myRTC->date += 1 * direction * myApp.x10;
 			myRTC->date %= 32;
 			break;
 		case 5:
 			if (direction == -1) myRTC->month += 13;
-			myRTC->month += 1 * direction;
+			myRTC->month += 1 * direction * myApp.x10;
 			myRTC->month %= 13;
 			break;
 		case 6:
 			if (direction == -1) myRTC->year += 100;
-			myRTC->year += 1 * direction;
+			myRTC->year += 1 * direction * myApp.x10;
 			myRTC->year %= 100;
 			break;
-		case 7:	// 1 .. 7 (!), SUN - первый
-			//if (direction == -1) myRTC->day += 7;
-			//myRTC->day += 1 * direction;
-			//myRTC->day %= 8;
-			//if (myRTC->day == 0) myRTC->day = 1;
-
+		case 7:
+			// 1 .. 7 (!), SUN - первый. x10 не действует здесь, т.к. прибавляем число меньшее 10. Получим переполнение при вычитании
 			// переход 7 -> 1. Был ещё такой вариант: сдвинуть весь диапазон на -1, произвести сложение как выше, и сдвинуть обратно
 			myRTC->day -= 1;
 
