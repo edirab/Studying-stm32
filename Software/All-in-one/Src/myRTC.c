@@ -57,15 +57,6 @@ void set_RTC(I2C_HandleTypeDef hi, RTC_DS3231 *myRTC){
 
 	uint8_t data[8];
 
-	//data[0] = 0;	//
-	//data[1] = DEC_to_BCD(0);	// sec
-	//data[2] = DEC_to_BCD(20);	// min
-	//data[3] = DEC_to_BCD(14);	// hour
-	//data[4] = DEC_to_BCD(1);	// day - SUN
-	//data[5] = DEC_to_BCD(25);	// date
-	//data[6] = DEC_to_BCD(1);	// month
-	//data[7] = DEC_to_BCD(21);	// year - 2021
-
 	data[0] = 0;	//
 	data[1] = DEC_to_BCD(myRTC->sec);	// sec
 	data[2] = DEC_to_BCD(myRTC->min);	// min

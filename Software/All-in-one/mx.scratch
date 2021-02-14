@@ -3,7 +3,7 @@
   <FileVersion>3.0</FileVersion>
   <Workspace>
     <WorkspaceType>Single-project</WorkspaceType>
-    <WorkspacePath>F:\Studying-stm32\All-in-one\</WorkspacePath>
+    <WorkspacePath>F:\Studying-stm32\Software\All-in-one\</WorkspacePath>
     <underRoot>true</underRoot>
     <TrustZone>0</TrustZone>
     <HAL_Driver>C:\Users\corsair\STM32Cube\Repository\STM32Cube_FW_F1_V1.8.3\</HAL_Driver>

@@ -455,10 +455,10 @@ Connection ~ 4550 6450
 Wire Wire Line
 	4550 6450 4550 6650
 $Comp
-L megasaturnv_custom_components:microSD_flipped U?
+L megasaturnv_custom_components:microSD_flipped U4
 U 1 1 602D1613
 P 8100 3600
-F 0 "U?" H 8528 3503 60  0000 L CNN
+F 0 "U4" H 8528 3503 60  0000 L CNN
 F 1 "microSD_flipped" H 8528 3397 60  0000 L CNN
 F 2 "megasaturnv_custom_components:microSD_Card_3V3" H 8200 3500 60  0001 C CNN
 F 3 "" H 8200 3500 60  0001 C CNN
@@ -466,10 +466,10 @@ F 3 "" H 8200 3500 60  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0116
 U 1 1 602D6319
 P 7150 3500
-F 0 "#PWR?" H 7150 3250 50  0001 C CNN
+F 0 "#PWR0116" H 7150 3250 50  0001 C CNN
 F 1 "GND" H 7155 3327 50  0000 C CNN
 F 2 "" H 7150 3500 50  0001 C CNN
 F 3 "" H 7150 3500 50  0001 C CNN

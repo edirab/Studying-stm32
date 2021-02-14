@@ -53,6 +53,8 @@ ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 
+IWDG_HandleTypeDef hiwdg;
+
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart3;
@@ -97,6 +99,7 @@ static void MX_I2C1_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -185,6 +188,7 @@ int main(void)
   MX_FATFS_Init();
   MX_ADC1_Init();
   MX_SPI1_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   	//set_RTC(hi2c1, &myRTC);
@@ -220,14 +224,18 @@ int main(void)
 	}
 
 	lcd_init ();
+	HAL_IWDG_Refresh(&hiwdg);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
 
-		if (myApp.state == 0) { // Нормальный цикл измерения
-			//HAL_GPIO_TogglePin(Debug_GPIO_Port, Debug_Pin);
+		// **************************************************************************************
+		// **************************  Нормальный цикл измерения  *******************************
+		// **************************************************************************************
+		if (myApp.state == 0) {
+
 			HAL_GPIO_WritePin(Debug_LED_Y_GPIO_Port, Debug_LED_Y_Pin, GPIO_PIN_SET);
 
 			// ************************ 1. RTC ***********************************************
@@ -331,6 +339,7 @@ int main(void)
 
 			HAL_GPIO_WritePin(Debug_LED_Y_GPIO_Port, Debug_LED_Y_Pin, GPIO_PIN_RESET);
 			HAL_Delay(975);
+			HAL_IWDG_Refresh(&hiwdg);
 		}
 
 		// **************************************************************************************
@@ -344,9 +353,8 @@ int main(void)
 				lcd_lower[i] = '\0';
 			}
 
-			while(myApp.state > 0 && myApp.state < 9){
-
-
+			while(myApp.state > 0 && myApp.state < 9)
+			{
 				// Считываем значение из часов
 				myRTC.RTC_RX_buffer[0] = 0;
 				RTC_WriteBuffer(hi2c1, &myRTC, 1);
@@ -423,15 +431,10 @@ int main(void)
 				lcd_send_string(lcd_lower);
 
 				HAL_Delay(500);
+				HAL_IWDG_Refresh(&hiwdg);
 			}
 			clear_buffer();
 		}
-//		else if (state == 6) {
-//			snprintf(lcd_upper, 17, "Set time to %02u:%02u %02u.%02u.%02u", myRTC.hour, myRTC.min, myRTC.date, myRTC.month, myRTC.year);
-//			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
-//			set_RTC(hi2c1, &myRTC);
-//		}
-
 		else {
 			size = sprintf(buffer, "Unknown execution state\n");
 			HAL_UART_Transmit(&huart3, (uint8_t*)buffer, strlen(buffer), 100);
@@ -459,10 +462,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -570,6 +574,34 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
+  hiwdg.Init.Reload = 400;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
 
 }
 

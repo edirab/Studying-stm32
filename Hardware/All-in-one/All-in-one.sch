@@ -38,12 +38,12 @@ $EndComp
 $Comp
 L Sensor:DHT11 U1
 U 1 1 6011E39A
-P 9500 1150
-F 0 "U1" H 9256 1196 50  0000 R CNN
-F 1 "DHT11" H 9256 1105 50  0000 R CNN
-F 2 "Sensor:Aosong_DHT11_5.5x12.0_P2.54mm" H 9500 750 50  0001 C CNN
-F 3 "http://akizukidenshi.com/download/ds/aosong/DHT11.pdf" H 9650 1400 50  0001 C CNN
-	1    9500 1150
+P 7600 1550
+F 0 "U1" H 7356 1596 50  0000 R CNN
+F 1 "DHT11" H 7356 1505 50  0000 R CNN
+F 2 "Sensor:Aosong_DHT11_5.5x12.0_P2.54mm" H 7600 1150 50  0001 C CNN
+F 3 "http://akizukidenshi.com/download/ds/aosong/DHT11.pdf" H 7750 1800 50  0001 C CNN
+	1    7600 1550
 	1    0    0    -1  
 $EndComp
 $Comp
