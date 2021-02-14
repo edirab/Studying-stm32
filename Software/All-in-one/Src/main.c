@@ -431,7 +431,7 @@ int main(void)
 
 				// Выходим из настройки, если пользователь ничего не сделал в течение 30 секунд
 				myApp.settings_counter++;
-				if (myApp.settings_counter == 30){
+				if (myApp.settings_counter == MAX_SETTINGS_COUNTER){
 					//break;
 					myApp.state = 8;
 				}

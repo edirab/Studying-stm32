@@ -38,6 +38,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+#define MAX_SETTINGS_COUNTER 90
+
 // App Control
 typedef struct {
 	uint8_t lcd_cycle_counter;
